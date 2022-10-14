@@ -1,4 +1,5 @@
 # Monorepo Tools
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/district0x/monorepo-tools/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/district0x/monorepo-tools/tree/master)
 
 Set of scripts to facilitate importing existing Clojure(Script) libraries under a monorepo.
 

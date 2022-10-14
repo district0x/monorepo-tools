@@ -36,11 +36,11 @@
   (let [library "is.mad/cljs-web3-next"
         new-version "2022.09.28"
         libs-root (str (fs/create-temp-dir {:prefix temp-prefix}))
-        deps-map {"first-lib" {:deps {(symbol library) {:mvn/version "2021.01.01"}}}
-                  "second-depends-on-first" {:deps {'is.mad/first-lib {:mvn/version "2021.01.01"}}}}
-        created-deps-paths (doall (map (fn [[lib-name deps]] (add-deps-to-path libs-root deps lib-name)) deps-map))
+        deps-list [["first-lib" {:deps {(symbol library) {:mvn/version "2021.01.01"}}}]
+                   ["second-depends-on-first" {:deps {'is.mad/first-lib {:mvn/version "2021.01.01"}}}]]
+        created-deps-paths (doall (map (fn [[lib-name deps]] (add-deps-to-path libs-root deps lib-name)) deps-list))
         result (doall (ulv/update-deps-at-path library new-version libs-root :source-group-id (fn [x] "is.mad")))]
-    (is (= (helpers/read-edn (first result)) {:deps {'is.mad/first-lib {:mvn/version new-version}}}))))
+    (is (= (helpers/read-edn (second created-deps-paths)) {:deps {'is.mad/first-lib {:mvn/version new-version}}}))))
 
 (deftest version-number-support-tests
   (testing "semversion variants"

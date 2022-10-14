@@ -10,6 +10,11 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Configure GIT (to facilitate commits in tests for git subtree)
+          command: |
+            git config --global user.email "circlt-test@example.com"
+            git config --global user.name "Test User Testing"
+      - run:
           name: Show & use new babashka instead of old
           command: sudo ln -sf /usr/bin/bb /usr/local/bin/bb
       - run:

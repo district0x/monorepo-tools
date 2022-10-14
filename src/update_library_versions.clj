@@ -153,7 +153,12 @@
     (helpers/write-edn deps-edn target-path)
     target-path))
 
-(defn update-deps-at-path [updated-library new-version updatable-libraries-path & {:keys [source-group-id] :or {source-group-id guess-group-id}}]
+(defn update-deps-at-path
+  "Takes updated library path, version and path where to look for affected
+  libraries. Then bumps the version when finds affected library and tries it
+  recursively to update all libraries whose deps.edn got affected by previous
+  update and thus need the libraries that depend on them to be bumped"
+  [updated-library new-version updatable-libraries-path & {:keys [source-group-id] :or {source-group-id guess-group-id}}]
   (let [deps-details (map #(collect-deps-details % source-group-id) (load-all-libs-in-subfolders updatable-libraries-path))
         change-details (updated-deps new-version updated-library deps-details)]
     (map write-deps-detail change-details)))

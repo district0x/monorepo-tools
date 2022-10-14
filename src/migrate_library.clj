@@ -60,10 +60,10 @@
         prefix (str group "/" source-name) ; e.g. browser/district-ui-web3
         merge-result (atom {})
         deps-edn-path (str target-path "/deps.edn")
+        return (sh "git" "diff-index" "HEAD" "--exit-code" "--quiet" :dir target-path)
         has-changes? (= 1 (:exit (sh "git" "diff-index" "HEAD" "--exit-code" "--quiet" :dir target-path)))]
     (with-sh-dir target-path
       (if has-changes?
-        (println "HAD CHANGES. WILL FAIL")
         (throw (ex-info "Can't continue because repo has changes. Stash or reset them before trying again" {})))
       (if create-new-branch? (sh "git" "checkout" "-b" source-name)) ; Create new branch where to put the history
       (log "Migrating" source-path "to" target-path "under" prefix)
