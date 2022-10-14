@@ -1,0 +1,23 @@
+version: 2.1
+jobs:
+  test:
+    working_directory: ~/ci
+    docker:
+      - image: 487920318758.dkr.ecr.us-west-2.amazonaws.com/cljs-web3-ci:latest
+        aws_auth:
+            aws_access_key_id: $AWS_ACCESS_KEY_ID
+            aws_secret_access_key: $AWS_SECRET_ACCESS_KEY
+    steps:
+      - checkout
+      - run:
+          name: Show & use new babashka instead of old
+          command: sudo ln -sf /usr/bin/bb /usr/local/bin/bb
+      - run:
+          name: Run tests
+          command: bb mt-test
+
+workflows:
+  version: 2
+  test_and_deploy:
+    jobs:
+      - test
