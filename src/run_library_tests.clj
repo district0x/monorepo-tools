@@ -1,6 +1,6 @@
 #!/usr/bin/env bb
 
-(ns run-tests
+(ns run-library-tests
   (:require [clojure.java.shell :refer [sh with-sh-dir]]
             [clojure.string :refer [trim]]
             [babashka.fs :as fs]
