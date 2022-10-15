@@ -76,8 +76,8 @@
 
 (defn -main [& args]
   (let [continuation-filename (first args)
-        release-config (first (helpers/read-edn "./releases.edn"))
-        libraries (:libs release-config)
+        latest-version (first (helpers/read-edn "./version-tracking.edn"))
+        libraries (:libs latest-version)
         generated-config (generate-test-run-config libraries)]
     (log "Generating dynamic config for CircleCI continuation")
     (log generated-config)
