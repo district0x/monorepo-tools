@@ -76,7 +76,7 @@
 
 (defn -main [& args]
   (let [continuation-filename (first args)
-        latest-version (first (helpers/read-edn "./version-tracking.edn"))
+        latest-version (first (helpers/read-edn "./version-tracking.edn")) ; ./ is the current folder from where the script executed
         libraries (:libs latest-version)
         generated-config (generate-test-run-config libraries)]
     (log "Generating dynamic config for CircleCI continuation")

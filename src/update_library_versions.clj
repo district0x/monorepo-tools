@@ -6,10 +6,16 @@
             [babashka.fs :as fs]
             [clojure.edn :as edn]
             [clojure.pprint :as pp]
-            [script-helpers :refer [log read-edn write-edn] :as helpers]))
+            [clojure.tools.cli :as cli]
+            [script-helpers :refer [log read-edn write-edn] :as helpers])
+  (:import [java.time.format DateTimeFormatter]
+           [java.time LocalDateTime]))
 
 (defn contains-deps-edn? [path]
   (fs/exists? (str path "/deps.edn")))
+
+(defn current-timestamp []
+  (.format (LocalDateTime/now) (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss")))
 
 (def three-part-semver-regex
   ; Supports 3 part version e.g. "1.2.3"
@@ -153,6 +159,25 @@
     (helpers/write-edn deps-edn target-path)
     target-path))
 
+(defn ensure-edn-file [path content]
+  (let [need-to-create? (and (fs/exists? path) (fs/regular-file? path))]
+    (if need-to-create? (helpers/write-edn content path))))
+
+(defn update-version-tracking [version change-details repo-path]
+  (let [version-tracking-path (str repo-path "/version-tracking.edn")
+        _ (ensure-edn-file version-tracking-path [])
+        previous-details (helpers/read-edn version-tracking-path)
+        updated-libraries (->> change-details
+                               (map :path)
+                               (map #(fs/relativize repo-path %))
+                               (map str))
+        version-info {:created-at (current-timestamp)
+                      :version version
+                      :description "placeholder"
+                      :libs updated-libraries}
+        updated-version-tracking (conj previous-details version-info)]
+    (helpers/write-edn updated-version-tracking version-tracking-path)))
+
 (defn update-deps-at-path
   "Takes updated library path, version and path where to look for affected
   libraries. Then bumps the version when finds affected library and tries it
@@ -161,6 +186,7 @@
   [updated-library new-version updatable-libraries-path & {:keys [source-group-id] :or {source-group-id guess-group-id}}]
   (let [deps-details (map #(collect-deps-details % source-group-id) (load-all-libs-in-subfolders updatable-libraries-path))
         change-details (updated-deps new-version updated-library deps-details)]
+    (if (not (empty? change-details)) (update-version-tracking new-version change-details (fs/parent updatable-libraries-path)))
     (map write-deps-detail change-details)))
 
 (defn -main [& args]

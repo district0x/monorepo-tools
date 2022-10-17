@@ -37,6 +37,14 @@ As for now the `bb.edn` file where Babashka configuration (and the task definiti
 1. Add the `monorepo-tools` as git submodule
 ```bash
 git submodule add -b master git@github.com:district0x/monorepo-tools.git
+cp monorepo-tools/bb.edn .
+```
+
+Then change `bb.edn` to have
+```clojure
+{:paths ["monorepo-tools/src" "monorepo-tools/test"]
+; ... the rest omitted
+}
 ```
 
 2. Make babashka tasks available by copying config (tasks section & adjusting `:paths`)
@@ -45,12 +53,41 @@ cp monorepo-tools/bb.edn .
 # Then edit the bb.edn to have its `src` and `test` paths point to the subfolder it lives in
 ```
 
+After which you'll have the babashka tasks available for you at the top level of the monorepo:
+```
+❯ bb tasks
+The following tasks are available:
+
+migrate         Import existing CLJS (using shadow-cljs, deps.edn) library with history from git repo
+run-tests       Generates config for CirlceCi dynamic config continuation steps
+update-versions Take changed library and bump versions of all affected by it through dependency
+mt-test         Run monorepo-tools tests
+```
+
 3. Install [babashka](https://github.com/babashka/babashka#installation) to have the `bb` command on PATH
   - the release binary (just 1 file) can be downloaded and made available on the PATH
 
-### 2. Import new library
+### 2. Migrate new library
+
+```bash
+bb migrate ~/path-to-current-library ~/root-path-of-monorepo browser
+```
+Where:
+1. `~/path-to-current-library` - location of the library to be migrate (git repo)
+2. `~/root-path-of-monorepo` - the destination root path of git monorepo
+3. `browser` string of the group (subfolder) under which to put the migrate library
 
 ### 3. Update versions (prepare for release)
+
+```bash
+bb update-versions is.mad/some-library 20.10.9 server
+```
+
+Where:
+1. `is.mad/some-library` - is the library you changed that now needs to be released under new version AND that can cause other libraries that depend on it also need to be re-released (with updated dependency of the originally changed library)
+2. `20.10.9` - the version that the library in (1.) will get on new release
+  - can be anything (2 or 3 part version consisting of numbers, though we recommend calendar versioning)
+3. `server` is the group (folder name) under which the script will look for affected libraries
 
 ### 4. Run *library* tests (i.e. not `monorepo-tools` tests)
 
