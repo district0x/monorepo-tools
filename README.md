@@ -59,7 +59,7 @@ After which you'll have the babashka tasks available for you at the top level of
 The following tasks are available:
 
 migrate         Import existing CLJS (using shadow-cljs, deps.edn) library with history from git repo
-run-tests       Generates config for CirlceCi dynamic config continuation steps
+ci-config       Generates config for CirlceCi dynamic config continuation steps
 update-versions Take changed library and bump versions of all affected by it through dependency
 mt-test         Run monorepo-tools tests
 ```
