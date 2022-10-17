@@ -159,13 +159,9 @@
     (helpers/write-edn deps-edn target-path)
     target-path))
 
-(defn ensure-edn-file [path content]
-  (let [need-to-create? (and (fs/exists? path) (fs/regular-file? path))]
-    (if need-to-create? (helpers/write-edn content path))))
-
 (defn update-version-tracking [version change-details repo-path]
   (let [version-tracking-path (str repo-path "/version-tracking.edn")
-        _ (ensure-edn-file version-tracking-path [])
+        _ (helpers/ensure-edn-file version-tracking-path [])
         previous-details (helpers/read-edn version-tracking-path)
         updated-libraries (->> change-details
                                (map :path)

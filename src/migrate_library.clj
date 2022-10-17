@@ -50,6 +50,16 @@
         (assoc-in [:aliases library-alias-key] library-alias-value)
         (assoc-in [:aliases group-alias] updated-group))))
 
+(def default-deps-edn
+  {:paths ["src" "test"]
+   :mvn/repos {"central" {:url "https://repo1.maven.org/maven2/"}
+               "clojars" {:url "https://clojars.org/repo"}}
+
+   :deps {'org.clojure/clojure       {:mvn/version "1.11.1"}
+          'thheller/shadow-cljs {:mvn/version "2.20.5"}}
+   :install-deps true
+   :aliases {}})
+
 (defn move-merging-git-histories
   "Creates branch and merges repository at source-path (with its commit
   history) to repository at `target-path` using last component (folder) name as
@@ -72,6 +82,7 @@
       (reset! merge-result (sh "git" "subtree" "add" (str "--prefix=" prefix) source-path "master")))
     (if (= 1 (:exit @merge-result))
       (throw (ex-info (str "Failed running `git subtree`: " (:err @merge-result)) @merge-result)))
+    (helpers/ensure-edn-file deps-edn-path default-deps-edn)
     (-> (read-edn deps-edn-path)
         (add-aliases ,,, prefix source-name group)
         (write-edn ,,, deps-edn-path))

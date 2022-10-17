@@ -17,3 +17,8 @@
   (binding [*print-readably* true ; necessary to get quotes around strings in the written EDN
             *print-namespace-maps* false] ; to have {:mvn/version ...} instead of #:mvn{:version ...}
     (spit deps-edn-path (with-out-str (pp/pprint deps-map)))))
+
+(defn ensure-edn-file [path content]
+  (let [already-exists? (and (fs/exists? path) (fs/regular-file? path))]
+    (println "need-to-create? " already-exists? path)
+    (if (not already-exists?) (write-edn content path))))
