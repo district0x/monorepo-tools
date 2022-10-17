@@ -56,7 +56,9 @@
   the subfolder (or prefix) in the target. Optionally the destination can be
   specified with 3rd argument, e.g. \"server/smart-contracts\". "
   [source-path target-path group & {:keys [create-new-branch?] :or {create-new-branch? true}}]
-  (let [source-name (str (last (fs/components source-path))) ; the-thing from /this/is/the-thing
+  (let [source-path (str (fs/real-path source-path)) ; Going through `real-path` to make relative paths work (e.g. ".")
+        target-path (str (fs/real-path target-path))
+        source-name (str (last (fs/components source-path))) ; the-thing from /this/is/the-thing
         prefix (str group "/" source-name) ; e.g. browser/district-ui-web3
         merge-result (atom {})
         deps-edn-path (str target-path "/deps.edn")
