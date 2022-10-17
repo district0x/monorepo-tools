@@ -13,25 +13,22 @@
     (->> indicator-files
          (map #(str library-path "/" %) ,,,)
          (map fs/exists? ,,,)
-         (reduce #(and %1 %2) ,,,))))
+         (reduce #(or %1 %2) ,,,))))
 
 (defn test-section [library]
   [(format "      - run:")
-   (format "          name: Install node modules")
-   (format "          command: yarn install")
-   (format "      - save_cache:")
-   (format "          name: Save npm package cache")
-   (format "          key: npm-packages-{{ checksum \"yarn.lock\" }}")
-   (format "          paths:")
-   (format "            - ./node_modules/")
-   (format "      - run:")
-   (format "          name: Deploy %s smart contracts" library)
-   (format "          command: \"cd %s && npx truffle migrate --network ganache --reset\"" library)
+   (format "          name: Install node modules in %s" library)
+   (format "          command: cd %s && yarn install" library)
+   (when (uses-smart-contracts? library)
+     (vector
+       (format "      - run:")
+       (format "          name: Deploy %s smart contracts" library)
+       (format "          command: \"cd %s && npx truffle migrate --network ganache --reset\"" library)))
    (format "      - run:")
    (format "          name: Compile Node tests for %s" library)
-   (format "          command: cd %s clj -Ashadow:district-server-smart-contracts compile test-node" library)
+   (format "          command: cd %s && npx shadow-cljs compile test-node" library)
    (format "      - run:")
-   (format "          name: Run Node tests for %s" library)
+   (format "          name: ⭐Run Node tests for %s" library)
    (format "          command: cd %s && node out/node-tests.js" library)])
 
 (defn deploy-section [library]
@@ -58,10 +55,6 @@
         "        command: [-d, -m district0x, -p 8549, -l 8000000]"
         "    steps:"
         "      - checkout"
-        "      - restore_cache:"
-        "          name: Restore npm package cache"
-        "          keys:"
-        "            - npm-packages-{{ checksum \"yarn.lock\" }}"
         "      - run:"
         "          name: Install node modules"
         "          command: yarn install"
@@ -71,15 +64,6 @@
         "          paths:"
         "            - ./node_modules/"
         (map test-section libraries)
-       ; "      - run:"
-       ; "          name: Deploy library's smart contracts"
-       ; "          command: \"cd server/district-server-smart-contracts && npx truffle migrate --network ganache --reset\""
-       ; "      - run:"
-       ; "          name: Compile Node tests"
-       ; "          command: clj -Ashadow:district-server-smart-contracts compile test-node"
-       ; "      - run:"
-       ; "          name: Run Node tests"
-       ; "          command: node out/node-tests.js"
        "  deploy:"
        "    working_directory: ~/ci"
        "    docker:"
@@ -90,12 +74,6 @@
        "    steps:"
        "      - checkout"
        (map deploy-section libraries)
-       ; "      - run:"
-       ; "          name: Build JAR"
-       ; "          command: clojure -T:build jar"
-       ; "      - run:"
-       ; "          name: Release to clojars"
-       ; "          command: clojure -T:build deploy"
        "workflows:"
        "  version: 2"
        "  test_and_deploy:"
