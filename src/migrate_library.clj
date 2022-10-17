@@ -27,7 +27,7 @@
   (let [deps-edn-template {:paths [] :deps {} :aliases {}}
         library-relative-path library-path ; FIXME: parse or pass in library relative path e.g. server/...
         library-alias-key (keyword library-name)
-        group-id "is.mad"
+        group-id (helpers/guess-group-id library-path)
         artefact-id library-name
         new-extra-deps {(symbol (str group-id "/" artefact-id)) {:local/root library-relative-path}}
         new-extra-paths [(str library-path "/test")]
