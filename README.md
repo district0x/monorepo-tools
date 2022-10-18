@@ -35,23 +35,25 @@ To make more convenient running the scripts, they are defined in form of [babash
 As for now the `bb.edn` file where Babashka configuration (and the task definitions live) doesn't get looked up and applied recursively. So to make it work at the top level of the monorepo (of which the current implementation of `monorepo-tools` resides in a subdirectory), copy the `:tasks` submap to the top level of your monorepo. E.g.
 
 1. Add the `monorepo-tools` as git submodule
-```bash
-git submodule add -b master git@github.com:district0x/monorepo-tools.git
-cp monorepo-tools/bb.edn .
-```
-
-Then change `bb.edn` to have
-```clojure
-{:paths ["monorepo-tools/src" "monorepo-tools/test"]
-; ... the rest omitted
-}
-```
-
-2. Make babashka tasks available by copying config (tasks section & adjusting `:paths`)
-```bash
-cp monorepo-tools/bb.edn .
-# Then edit the bb.edn to have its `src` and `test` paths point to the subfolder it lives in
-```
+    ```bash
+    git submodule add -b master git@github.com:district0x/monorepo-tools.git
+    cp monorepo-tools/bb.edn .
+    ```
+2. Add `monorepo-tools` as local dependency to `deps.edn`
+    ```clojure
+    {:deps {is.d0x/monorepo-tools {:local/root "./monorepo-tools"}}}
+    ```
+3. Then copy over `monorepo-tools/bb.edn` to your monorepo root and change it to have
+    ```clojure
+    {:paths ["monorepo-tools/src" "monorepo-tools/test"]
+    ; ... the rest omitted
+    }
+    ```
+4. Make babashka tasks available by copying config (tasks section & adjusting `:paths`)
+    ```bash
+    cp monorepo-tools/bb.edn .
+    # Then edit the bb.edn to have its `src` and `test` paths point to the subfolder it lives in
+    ```
 
 After which you'll have the babashka tasks available for you at the top level of the monorepo:
 ```
@@ -61,6 +63,7 @@ The following tasks are available:
 migrate         Import existing CLJS (using shadow-cljs, deps.edn) library with history from git repo
 ci-config       Generates config for CirlceCi dynamic config continuation steps
 update-versions Take changed library and bump versions of all affected by it through dependency
+release         Try to shell out to clojure. Use: bb release VERSION LIBPATH
 mt-test         Run monorepo-tools tests
 ```
 
@@ -89,6 +92,23 @@ Where:
   - can be anything (2 or 3 part version consisting of numbers, though we recommend calendar versioning)
 3. `server` is the group (folder name) under which the script will look for affected libraries
 
-### 4. Run *library* tests (i.e. not `monorepo-tools` tests)
+### 4. Release (build & publish) the library
 
-### 5. Start a REPL
+This step depends on the latest (topmost) entry in `version-tracking.edn` and more specifically the `:libs` and `:version` keys in that map.
+Normally a library gets released after a successful merge & test run on master via CircleCI workflow.
+
+If you want to release manually the following is needed:
+1. Export `CLOJARS_USERNAME` and `CLOJARS_PASSWORD` (password relly has the value of a _deploy token_) to the ENV
+2. Run `bb release 22.10.7 server/cljs-web3-next` to release `cljs-web3-next` with a version `22.10.7`
+  - the version will be interpreted as string, so you can put whatever there, also `-SNAPSHOT` versions
+
+### 5. Run *library* tests (i.e. not `monorepo-tools` tests)
+
+Examples of that can be seen in `generate-ci-config/test-section` (used via `bb ci-config [FILENAME]` in CircleCI dynamic config)
+
+Otherwise the tests are run as usual for shadow-cljs project:
+1. Watch or compile the code `npx shadow-cljs watch test-node` (where `test-node` is the build id, alternatively `test-browser`)
+2. Run the tests `node out/node-tests.js` (or in case of browser tests, open the browser [http://localhost:6502](http://localhost:6502))
+
+### 6. Start a REPL
+> TODO

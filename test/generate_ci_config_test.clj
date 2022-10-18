@@ -17,8 +17,8 @@
   (testing "config for CI"
     (let [root-path (fs/create-temp-dir {:prefix temp-prefix})
           library-a (prepare-library-with-smart-contracts root-path "district-server-dumb-contracts")
-          ci-config (gc/generate-test-run-config [library-a])
+          ci-config (gc/generate-test-run-config [library-a] "22.10.18")
           test-section "district-server-dumb-contracts && npx truffle migrate"
-          deploy-section "district-server-dumb-contracts && clojure -T:build"]
+          deploy-section (format "bb release 22.10.18 %s" library-a)]
       (is (clojure.string/includes? ci-config test-section))
       (is (clojure.string/includes? ci-config deploy-section)))))

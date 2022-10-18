@@ -50,15 +50,12 @@
        (format "          name: ⭐Run Browser (karma) tests for %s" library)
        (format "          command: CHROME_BIN=`which chromium-browser` cd %s && npx karma start karma.conf.js --single-run" library)))])
 
-(defn deploy-section [library]
+(defn deploy-section [library version]
   [(format "      - run:")
    (format "          name: Build JAR")
-   (format "          command: cd %s && clojure -T:build jar" library)
-   (format "      - run:")
-   (format "          name: Release to clojars")
-   (format "          command: cd %s && clojure -T:build deploy" library)])
+   (format "          command: bb release %s %s" version library)])
 
-(defn generate-test-run-config [libraries]
+(defn generate-test-run-config [libraries version]
   (->> ["version: 2.1"
         "jobs:"
         "  test:"
@@ -92,7 +89,7 @@
        "            aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
        "    steps:"
        "      - checkout"
-       (map deploy-section libraries)
+       (map #(deploy-section % version) libraries)
        "workflows:"
        "  version: 2"
        "  test_and_deploy:"
@@ -112,7 +109,7 @@
   (let [continuation-filename (first args)
         latest-version (first (helpers/read-edn "./version-tracking.edn")) ; ./ is the current folder from where the script executed
         libraries (:libs latest-version)
-        generated-config (generate-test-run-config libraries)]
+        generated-config (generate-test-run-config libraries (:version latest-version))]
     (log "Generating dynamic config for CircleCI continuation:")
     (log generated-config)
     (spit continuation-filename generated-config)))
