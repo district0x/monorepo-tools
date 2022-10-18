@@ -15,6 +15,15 @@
          (map fs/exists? ,,,)
          (reduce #(or %1 %2) ,,,))))
 
+(defn server-library? [library]
+  (clojure.string/starts-with? library "server/"))
+
+(defn browser-library? [library]
+  (clojure.string/starts-with? library "browser/"))
+
+(defn shared-library? [library]
+  (clojure.string/starts-with? library "shared/"))
+
 (defn test-section [library]
   [(format "      - run:")
    (format "          name: Install node modules in %s" library)
@@ -24,12 +33,22 @@
        (format "      - run:")
        (format "          name: Deploy %s smart contracts" library)
        (format "          command: \"cd %s && npx truffle migrate --network ganache --reset\"" library)))
-   (format "      - run:")
-   (format "          name: Compile Node tests for %s" library)
-   (format "          command: cd %s && npx shadow-cljs compile test-node" library)
-   (format "      - run:")
-   (format "          name: ⭐Run Node tests for %s" library)
-   (format "          command: cd %s && node out/node-tests.js" library)])
+   (when (or (server-library? library) (shared-library? library))
+     (vector
+       (format "      - run:")
+       (format "          name: Compile Node tests for %s" library)
+       (format "          command: cd %s && npx shadow-cljs compile test-node" library)
+       (format "      - run:")
+       (format "          name: ⭐Run Node tests for %s" library)
+       (format "          command: cd %s && node out/node-tests.js" library)))
+   (when (or (browser-library? library) (shared-library? library))
+     (vector
+       (format "      - run:")
+       (format "          name: Compile Browser tests for %s" library)
+       (format "          command: cd %s && npx shadow-cljs compile test-ci" library)
+       (format "      - run:")
+       (format "          name: ⭐Run Browser (karma) tests for %s" library)
+       (format "          command: CHROME_BIN=`which chromium-browser` cd %s && npx karma start karma.conf.js --single-run" library)))])
 
 (defn deploy-section [library]
   [(format "      - run:")
