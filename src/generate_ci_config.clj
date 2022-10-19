@@ -52,7 +52,7 @@
 
 (defn deploy-section [library version]
   [(format "      - run:")
-   (format "          name: Build JAR")
+   (format "          name: Build JAR & publishing to Clojars %s @ %s" library version)
    (format "          command: bb release %s %s" version library)])
 
 (defn generate-test-run-config [libraries version]
