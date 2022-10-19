@@ -89,6 +89,12 @@
        "            aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
        "    steps:"
        "      - checkout"
+       "      - run:"
+       "          name: Get the contents of monorepo-tools git submodule"
+       "          command: git submodule update --init"
+       "      - run:"
+       "          name: Make bb available globally"
+       "          command: sudo ln -fs `pwd`/bin/bb /usr/local/bin/bb"
        (map #(deploy-section % version) libraries)
        "workflows:"
        "  version: 2"
