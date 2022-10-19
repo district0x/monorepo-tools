@@ -27,7 +27,7 @@
   (let [deps-edn-template {:paths [] :deps {} :aliases {}}
         library-relative-path library-path ; FIXME: parse or pass in library relative path e.g. server/...
         library-alias-key (keyword library-name)
-        group-id "is.mad"
+        group-id (helpers/guess-group-id library-path)
         artefact-id library-name
         new-extra-deps {(symbol (str group-id "/" artefact-id)) {:local/root library-relative-path}}
         new-extra-paths [(str library-path "/test")]
@@ -50,13 +50,25 @@
         (assoc-in [:aliases library-alias-key] library-alias-value)
         (assoc-in [:aliases group-alias] updated-group))))
 
+(def default-deps-edn
+  {:paths ["src" "test"]
+   :mvn/repos {"central" {:url "https://repo1.maven.org/maven2/"}
+               "clojars" {:url "https://clojars.org/repo"}}
+
+   :deps {'org.clojure/clojure       {:mvn/version "1.11.1"}
+          'thheller/shadow-cljs {:mvn/version "2.20.5"}}
+   :install-deps true
+   :aliases {}})
+
 (defn move-merging-git-histories
   "Creates branch and merges repository at source-path (with its commit
   history) to repository at `target-path` using last component (folder) name as
   the subfolder (or prefix) in the target. Optionally the destination can be
   specified with 3rd argument, e.g. \"server/smart-contracts\". "
   [source-path target-path group & {:keys [create-new-branch?] :or {create-new-branch? true}}]
-  (let [source-name (str (last (fs/components source-path))) ; the-thing from /this/is/the-thing
+  (let [source-path (str (fs/real-path source-path)) ; Going through `real-path` to make relative paths work (e.g. ".")
+        target-path (str (fs/real-path target-path))
+        source-name (str (last (fs/components source-path))) ; the-thing from /this/is/the-thing
         prefix (str group "/" source-name) ; e.g. browser/district-ui-web3
         merge-result (atom {})
         deps-edn-path (str target-path "/deps.edn")
@@ -70,6 +82,7 @@
       (reset! merge-result (sh "git" "subtree" "add" (str "--prefix=" prefix) source-path "master")))
     (if (= 1 (:exit @merge-result))
       (throw (ex-info (str "Failed running `git subtree`: " (:err @merge-result)) @merge-result)))
+    (helpers/ensure-edn-file deps-edn-path default-deps-edn)
     (-> (read-edn deps-edn-path)
         (add-aliases ,,, prefix source-name group)
         (write-edn ,,, deps-edn-path))

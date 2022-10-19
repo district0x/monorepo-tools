@@ -1,0 +1,4 @@
+{:paths ["src" "test"]
+ :deps {slipset/deps-deploy {:mvn/version "0.2.0"}
+        io.github.clojure/tools.build {:git/tag "v0.8.3" :git/sha "0d20256"}}
+ :aliases {:release {:exec-fn release/-main}}}

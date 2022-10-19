@@ -6,10 +6,16 @@
             [babashka.fs :as fs]
             [clojure.edn :as edn]
             [clojure.pprint :as pp]
-            [script-helpers :refer [log read-edn write-edn] :as helpers]))
+            [clojure.tools.cli :as cli]
+            [script-helpers :refer [log read-edn write-edn] :as helpers])
+  (:import [java.time.format DateTimeFormatter]
+           [java.time LocalDateTime]))
 
 (defn contains-deps-edn? [path]
   (fs/exists? (str path "/deps.edn")))
+
+(defn current-timestamp []
+  (.format (LocalDateTime/now) (DateTimeFormatter/ofPattern "yyyy-MM-dd HH:mm:ss")))
 
 (def three-part-semver-regex
   ; Supports 3 part version e.g. "1.2.3"
@@ -104,31 +110,6 @@
   (let [updated-deps-details (calculate-deps-updates version [library] deps-details)]
     (filter-changed-deps-details deps-details updated-deps-details)))
 
-(defn guess-group-id
-  "The deps.edn only knows the artefact names that the library itself depends
-  on. It doesn't know under which name the library eventually gets published
-  (e.g. to Clojars). We can deduce the library name from its folder name, but
-  the group-id (e.g. is.mad in is.mad/the-library) is unknown (but necessary).
-  For that we need heuristic and during the move to shadow-cljs ib_version.clj
-  was started to be used to denote that, for the build script to use.
-
-  So this method tries to read lib_version.clj from the library folder and
-  extract group-id from there"
-  [library-path]
-  (let [version-path (str (first (clojure.string/split library-path #"/deps.edn")) "/lib_version.clj")
-        version-exists? (fs/exists? version-path)
-        default-group-id "io.github.district0x"]
-    (if version-exists?
-      (-> version-path
-          helpers/read-clj-wrapped
-          second
-          (nth ,,, 2)
-          namespace
-          (clojure.string/replace-first ,,, "'" ""))
-      (do
-        (log "WARNING: group-id couldn't be detected, using the default: " default-group-id)
-        default-group-id))))
-
 (defn lib-name-from-path
   "Takes deps.edn path and returs penultimate component of the path.
   E.g. /one/two/three-is-lib/deps.edn => three-is-lib"
@@ -140,7 +121,7 @@
       str))
 
 (defn collect-deps-details
-  ([deps-edn-path] (collect-deps-details deps-edn-path guess-group-id))
+  ([deps-edn-path] (collect-deps-details deps-edn-path helpers/guess-group-id))
   ([deps-edn-path group-id-fn]
    {:library (symbol (str (group-id-fn deps-edn-path) "/" (lib-name-from-path deps-edn-path)))
     :path (clojure.string/replace deps-edn-path #"/deps.edn$" "")
@@ -153,14 +134,30 @@
     (helpers/write-edn deps-edn target-path)
     target-path))
 
+(defn update-version-tracking [version change-details repo-path]
+  (let [version-tracking-path (str repo-path "/version-tracking.edn")
+        _ (helpers/ensure-edn-file version-tracking-path [])
+        previous-details (helpers/read-edn version-tracking-path)
+        updated-libraries (->> change-details
+                               (map :path)
+                               (map #(fs/relativize repo-path %))
+                               (map str))
+        version-info {:created-at (current-timestamp)
+                      :version version
+                      :description "placeholder"
+                      :libs updated-libraries}
+        updated-version-tracking (conj previous-details version-info)]
+    (helpers/write-edn updated-version-tracking version-tracking-path)))
+
 (defn update-deps-at-path
   "Takes updated library path, version and path where to look for affected
   libraries. Then bumps the version when finds affected library and tries it
   recursively to update all libraries whose deps.edn got affected by previous
   update and thus need the libraries that depend on them to be bumped"
-  [updated-library new-version updatable-libraries-path & {:keys [source-group-id] :or {source-group-id guess-group-id}}]
+  [updated-library new-version updatable-libraries-path & {:keys [source-group-id] :or {source-group-id helpers/guess-group-id}}]
   (let [deps-details (map #(collect-deps-details % source-group-id) (load-all-libs-in-subfolders updatable-libraries-path))
         change-details (updated-deps new-version updated-library deps-details)]
+    (if (not (empty? change-details)) (update-version-tracking new-version change-details (fs/parent updatable-libraries-path)))
     (map write-deps-detail change-details)))
 
 (defn -main [& args]
