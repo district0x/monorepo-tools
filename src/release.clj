@@ -1,6 +1,7 @@
 (ns release
   (:require [clojure.tools.build.api :as b]
-            [deps-deploy.deps-deploy :as dd]))
+            [deps-deploy.deps-deploy :as dd]
+            [config :refer [get-config]]))
 
 (def output-root "releases")
 (def artefact-group "is.mad")
@@ -35,18 +36,27 @@
   (let [[_ library-name] (clojure.string/split lib-path #"\/")
         class-dir (str output-root "/" library-name)
         jar-path (str output-root "/" library-name "-" version ".jar")
+        artefact-group (:artefact-group (get-config))
         artefact (artefact-id artefact-group library-name)]
     (println "Constructing JAR" library-name "@" version)
     (jar lib-path version artefact class-dir jar-path)
     (println "Deploying to clojars: " jar-path)
     (deploy jar-path class-dir artefact)))
 
+(defn usage-info []
+  (->> [""
+        "Usage:"
+        "  export CLOJARS_USERNAME=... && export CLOJARS_TOKEN=..."
+        "  release VERSION LIBPATH"
+        ""
+        "Example:"
+        "  bb release 22.10.20 server/district-server-web3"]
+       (clojure.string/join "\n" ,,,)))
+
 (defn -main [arg-map & args]
   (let [version (str (:version arg-map))
-        library (str (:library arg-map))]
-    (release version library)))
-
-; To allow running as commandn line util but also required & used in other programs or REPL
-; https://book.babashka.org/#main_file
-(when (= *file* (System/getProperty "babashka.file"))
-  (apply -main *command-line-args*))
+        library (str (:library arg-map))
+        invalid? (fn [input] (or (clojure.string/blank? input) (= "null" input)))]
+    (if (or (invalid? version) (invalid? library))
+      (println "ERROR: some arguments were missing\n" (usage-info))
+      (release version library))))
