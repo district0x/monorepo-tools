@@ -2,9 +2,13 @@
   (:require [clojure.edn :as edn])) ; Keep the dependencies minimal to make it usable in JVM & Babashka
 
 (def ^{:dynamic true} *default-config-path* "monorepo-config.edn")
-(def ^{:dynamic true} *default-config* {:artefact-group "is.mad"})
+(def ^{:dynamic true} *default-config* {:artefact-group "is.mad"
+                                        :groups ["browser" "server" "shared"]})
 
 (defn get-config
+  "Returns config from 1) provided path
+                       2) *default-config-path* path
+                       3) the default values from *default-config*"
   ([] (get-config *default-config-path*))
   ([path]
    (try
