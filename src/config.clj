@@ -3,6 +3,7 @@
 
 (def ^{:dynamic true} *default-config-path* "monorepo-config.edn")
 (def ^{:dynamic true} *default-config* {:artefact-group "is.mad"
+                                        :bundle-prefix "district-"
                                         :groups ["browser" "server" "shared"]})
 
 (defn get-config
