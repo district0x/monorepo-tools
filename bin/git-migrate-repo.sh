@@ -8,7 +8,8 @@ path="$(pwd)"
 tmp="$(mktemp -d)"
 remote="$(echo "$tmp" | sed 's/\///g'| sed 's/\./_/g')"
 
-git clone "$repo" "$tmp"
+# git clone "$repo" "$tmp"
+cp -r "$repo" "$tmp"
 cd "$tmp"
 
 git filter-branch --index-filter '
