@@ -81,8 +81,12 @@
 
       (log "Migrating" source-path "to" target-path "under" prefix)
       (if by-script?
-        (reset! merge-result (sh "bin/git-migrate-repo.sh" (str "https://github.com/district0x/" source-name ".git") prefix :dir (str (fs/cwd))))
-        (reset! merge-result (sh "git" "subtree" "add" (str "--prefix=" prefix) source-path "master"))))
+        (do
+          (log "Migrating with git filter-branch (bin/git-migrate-repo.sh) strategy")
+          (reset! merge-result (sh "bin/git-migrate-repo.sh" (str "https://github.com/district0x/" source-name ".git") prefix :dir (str (fs/cwd)))))
+        (do
+          (log "Migrating with git subtree strategy...")
+          (reset! merge-result (sh "git" "subtree" "add" (str "--prefix=" prefix) source-path "master")))))
 
     (if (= 1 (:exit @merge-result))
       (throw (ex-info (str "Failed running `git subtree`: " (:err @merge-result)) @merge-result)))
