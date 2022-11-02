@@ -7,6 +7,7 @@
             [clojure.edn :as edn]
             [clojure.pprint :as pp]
             [clojure.tools.cli :as cli]
+            [config :refer [get-config]]
             [script-helpers :refer [log read-edn write-edn] :as helpers]))
 
 (defn absolutize-path [path]
@@ -83,7 +84,10 @@
       (if by-script?
         (do
           (log "Migrating with git filter-branch (bin/git-migrate-repo.sh) strategy")
-          (reset! merge-result (sh "bin/git-migrate-repo.sh" (str "https://github.com/district0x/" source-name ".git") prefix :dir (str (fs/cwd)))))
+          (reset! merge-result (sh (str (:tools-root (get-config)) "/bin/git-migrate-repo.sh")
+                                   (str "https://github.com/district0x/" source-name ".git")
+                                   prefix
+                                   :dir (str (fs/cwd)))))
         (do
           (log "Migrating with git subtree strategy...")
           (reset! merge-result (sh "git" "subtree" "add" (str "--prefix=" prefix) source-path "master")))))
