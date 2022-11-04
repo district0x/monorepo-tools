@@ -73,7 +73,6 @@
         prefix (str group "/" source-name) ; e.g. browser/district-ui-web3
         merge-result (atom {})
         deps-edn-path (str target-path "/deps.edn")
-        return (sh "git" "diff-index" "HEAD" "--exit-code" "--quiet" :dir target-path)
         has-changes? (= 1 (:exit (sh "git" "diff-index" "HEAD" "--exit-code" "--quiet" :dir target-path)))]
     (with-sh-dir target-path
       (if has-changes?
@@ -84,10 +83,17 @@
       (if by-script?
         (do
           (log "Migrating with git filter-branch (bin/git-migrate-repo.sh) strategy")
-          (reset! merge-result (sh (str (:tools-root (get-config)) "/bin/git-migrate-repo.sh")
-                                   (str "https://github.com/district0x/" source-name ".git")
-                                   prefix
-                                   :dir (str (fs/cwd)))))
+          (let [filter-repo-check (sh "sh" "-c" "hash git-filter-repo")
+                temp-container (fs/create-temp-dir {:prefix (str "migrate-library-" source-name)})
+                source-copy-in-tmp (str temp-container "/" source-name)
+                remote-name prefix]
+            (if (not (= 0 (:exit filter-repo-check))) (throw (RuntimeException. (:err filter-repo-check))))
+
+            (fs/copy-tree source-path source-copy-in-tmp)
+            (sh "git" "filter-repo" "--force" "--to-subdirectory-filter" prefix :dir source-copy-in-tmp)
+            (sh "git" "remote" "add" "-f" remote-name source-copy-in-tmp :dir target-path)
+            (reset! merge-result (sh "git" "merge" "--allow-unrelated-histories" (str remote-name "/master") :dir target-path))
+            (sh "git" "remote" "remove" remote-name :dir target-path)))
         (do
           (log "Migrating with git subtree strategy...")
           (reset! merge-result (sh "git" "subtree" "add" (str "--prefix=" prefix) source-path "master")))))
