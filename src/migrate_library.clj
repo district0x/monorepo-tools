@@ -7,6 +7,7 @@
             [clojure.edn :as edn]
             [clojure.pprint :as pp]
             [clojure.tools.cli :as cli]
+            [config :refer [get-config]]
             [script-helpers :refer [log read-edn write-edn] :as helpers]))
 
 (defn absolutize-path [path]
@@ -65,21 +66,38 @@
   history) to repository at `target-path` using last component (folder) name as
   the subfolder (or prefix) in the target. Optionally the destination can be
   specified with 3rd argument, e.g. \"server/smart-contracts\". "
-  [source-path target-path group & {:keys [create-new-branch?] :or {create-new-branch? true}}]
+  [source-path target-path group & {:keys [create-new-branch? by-script?] :or {create-new-branch? true by-script? false}}]
   (let [source-path (str (fs/real-path source-path)) ; Going through `real-path` to make relative paths work (e.g. ".")
         target-path (str (fs/real-path target-path))
         source-name (str (last (fs/components source-path))) ; the-thing from /this/is/the-thing
         prefix (str group "/" source-name) ; e.g. browser/district-ui-web3
         merge-result (atom {})
         deps-edn-path (str target-path "/deps.edn")
-        return (sh "git" "diff-index" "HEAD" "--exit-code" "--quiet" :dir target-path)
         has-changes? (= 1 (:exit (sh "git" "diff-index" "HEAD" "--exit-code" "--quiet" :dir target-path)))]
     (with-sh-dir target-path
       (if has-changes?
         (throw (ex-info "Can't continue because repo has changes. Stash or reset them before trying again" {})))
       (if create-new-branch? (sh "git" "checkout" "-b" source-name)) ; Create new branch where to put the history
+
       (log "Migrating" source-path "to" target-path "under" prefix)
-      (reset! merge-result (sh "git" "subtree" "add" (str "--prefix=" prefix) source-path "master")))
+      (if by-script?
+        (do
+          (log "Migrating with git filter-branch (bin/git-migrate-repo.sh) strategy")
+          (let [filter-repo-check (sh "sh" "-c" "hash git-filter-repo")
+                temp-container (fs/create-temp-dir {:prefix (str "migrate-library-" source-name)})
+                source-copy-in-tmp (str temp-container "/" source-name)
+                remote-name prefix]
+            (if (not (= 0 (:exit filter-repo-check))) (throw (RuntimeException. (:err filter-repo-check))))
+
+            (fs/copy-tree source-path source-copy-in-tmp)
+            (sh "git" "filter-repo" "--force" "--to-subdirectory-filter" prefix :dir source-copy-in-tmp)
+            (sh "git" "remote" "add" "-f" remote-name source-copy-in-tmp :dir target-path)
+            (reset! merge-result (sh "git" "merge" "--allow-unrelated-histories" (str remote-name "/master") :dir target-path))
+            (sh "git" "remote" "remove" remote-name :dir target-path)))
+        (do
+          (log "Migrating with git subtree strategy...")
+          (reset! merge-result (sh "git" "subtree" "add" (str "--prefix=" prefix) source-path "master")))))
+
     (if (= 1 (:exit @merge-result))
       (throw (ex-info (str "Failed running `git subtree`: " (:err @merge-result)) @merge-result)))
     (helpers/ensure-edn-file deps-edn-path default-deps-edn)
@@ -91,12 +109,14 @@
 (def cli-options
   [[nil "--[no-]create-branch" "(default: true) create new branch with library name where to import"
     :default true]
+   [nil "--by-script" "(default: false) instead of `git-subtree` use script"
+    :default false]
    ["-h" "--help" "print this help about usage"]])
 
 (defn usage [options-summary]
   (->> ["migrate-library  | import individual ClojureScript library repo (with commit history) into a monorepo"
         ""
-        "Usage: migrate_library.clj [options] library-path target-path group"
+        "Usage: migrate_library.clj library-path target-path group [options]"
         ""
         "Options:"
         options-summary
@@ -142,7 +162,7 @@
         (println (usage summary))
         (System/exit 0))
       args-ok?
-      (move-merging-git-histories library-path target-path group :create-new-branch? (:create-branch options))
+      (move-merging-git-histories library-path target-path group :create-new-branch? (:create-branch options) :by-script? (:by-script options))
       :else
       (do
         (println (usage summary))
