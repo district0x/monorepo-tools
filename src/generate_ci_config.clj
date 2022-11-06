@@ -154,7 +154,7 @@
         library-source-paths (collect-libraries (:groups (get-config)) repo-root)
         libraries-source-timestamps (map #(vector (last-commit-timestamp % repo-root) %) (map #(relativize-path repo-root %) library-source-paths))
         libraries-from-tracking (:libs latest-version)
-        newest-source-change-timestamp (reduce max (map first libraries-source-timestamps))
+        newest-source-change-timestamp (reduce max (or [-1] (map first libraries-source-timestamps)))
         libraries-to-test (if (>= version-tracking-timestamp newest-source-change-timestamp)
                                libraries-from-tracking
                                (map second libraries-source-timestamps))
