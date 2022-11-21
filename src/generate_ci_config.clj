@@ -69,7 +69,7 @@
         "            aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
         "      # Secondary container image on common network."
         "      - image: trufflesuite/ganache-cli:latest"
-        "        command: [-d, -m district0x, -p 8549, -l 8000000, --blockTime 1]"
+        "        command: [-d, -m district0x, -p 8549, -l 8000000, -b 1]"
         "    steps:"
         "      - checkout"
         "      - run:"
