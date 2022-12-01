@@ -20,14 +20,16 @@
         (string/replace $ #".clj$" "")
         (symbol $)))
 
-(def test-namespaces
-  (->> (fs/glob "./" "**/*_test.clj")
-       (mapv test-file->test-ns)))
-
-(apply require test-namespaces)
+(defn get-test-namespaces [pattern]
+  (let [pattern-or-all (or pattern "")
+        underscored (clojure.string/replace pattern-or-all #"-" "_")
+        namespace->file (str "**/" underscored "*_test.clj")]
+    (->> (fs/glob "./" namespace->file)
+         (mapv test-file->test-ns))))
 
 (defn -main [& args]
-  (let [results (apply t/run-tests test-namespaces)]
+  (doall (map #(require %) (get-test-namespaces (first (first args)))))
+  (let [results (apply t/run-tests (map symbol (get-test-namespaces (first (first args)))))]
     (System/exit (+ (:fail results) (:error results)))))
 
 ; To allow running as commandn line util but also required & used in other programs or REPL
