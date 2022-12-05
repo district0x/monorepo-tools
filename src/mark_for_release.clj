@@ -42,20 +42,29 @@
         selected-libraries (collect-libraries specifier root)
         version (calendar-version-today)
         updated-version-tracking (add-to-tracking selected-libraries version current-version-tracking)]
+    (log (format "Adding libraries for the next version(%s) release:" version))
+    (doall (map #(log (str "  - " %) selected-libraries)))
     (helpers/write-edn updated-version-tracking version-tracking-path)))
 
-(defn -main
+(def task-doc
   "Adds libraries to version-tracking.edn topmost record (creating version for today if needed)
+
+  Usage: bb mark-for-release LIB_PATH_OR_GLOB
 
   Example use:
     bb mark-for-release shared                     <-- includes everything under shared
     bb mark-for-release browser/district-ui-web3-* <-- matches the browser libraries matching glob
     bb mark-for-release server/district-server-db  <-- matches one specific library
-  "
+  ")
+
+(defn -main
   [& args]
   (let [[path-specifier] *command-line-args*]
-    (log "Marking libraries for release:" path-specifier)
-    (update-release path-specifier (fs/cwd))))
+    (if (clojure.string/blank? path-specifier)
+      (do
+        (log "ERROR: LIB_PATH_OR_GLOB missing\n")
+        (log task-doc))
+      (update-release path-specifier (fs/cwd)))))
 
 ; To allow running as commandn line util but also required & used in other programs or REPL
 ; https://book.babashka.org/#main_file
