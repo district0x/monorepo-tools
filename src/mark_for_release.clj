@@ -25,13 +25,15 @@
     (map #(clojure.string/replace (str %) (str root "/") "") matches)))
 
 (defn add-to-tracking [selected-libs version-today current-tracking]
-  (let [new-tracking-entry {:created-at "..." :version version-today :description "..." :libs []}
+  (let [new-tracking-entry {:created-at (iso-time-now) :version version-today :description "..." :libs []}
         latest-release (or (first current-tracking) {})
         release-version-matches? (= version-today (:version latest-release))
         tracking-entry (if release-version-matches? latest-release new-tracking-entry)
         other-entries (if release-version-matches? (or (rest current-tracking) []) current-tracking)
         updated-libs (distinct (into (:libs tracking-entry) selected-libs))
-        updated-tracking-entry (assoc-in tracking-entry [:libs] updated-libs)]
+        updated-tracking-entry (-> tracking-entry
+                                   (assoc-in [:libs] (into [] updated-libs))
+                                   (assoc-in [:updated-at] (iso-time-now)))]
     (into [updated-tracking-entry] other-entries)))
 
 (defn update-release [specifier root]

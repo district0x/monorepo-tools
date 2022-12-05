@@ -28,5 +28,5 @@
           libs-to-release ["browser/new-lib" "server/modified-lib"]
           updated-tracking (mfr/add-to-tracking libs-to-release "22.12.2" tracking)]
       (is (= 2 (count updated-tracking)))
-      (is (=set [:created-at :version :description :libs] (keys (first updated-tracking))))
+      (is (=set [:created-at :updated-at :version :description :libs] (keys (first updated-tracking))))
       (is (= (get-in updated-tracking [0 :libs]) libs-to-release)))))
