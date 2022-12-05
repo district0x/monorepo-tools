@@ -155,15 +155,28 @@
   recursively to update all libraries whose deps.edn got affected by previous
   update and thus need the libraries that depend on them to be bumped"
   [updated-library new-version updatable-libraries-path & {:keys [source-group-id] :or {source-group-id helpers/guess-group-id}}]
+  (log "Updating dependencies. Starting from:" updated-library new-version updatable-libraries-path)
   (let [deps-details (map #(collect-deps-details % source-group-id) (load-all-libs-in-subfolders updatable-libraries-path))
         change-details (updated-deps new-version updated-library deps-details)]
     (if (not (empty? change-details)) (update-version-tracking new-version change-details (fs/parent updatable-libraries-path)))
     (map write-deps-detail change-details)))
 
+(def task-doc
+  "Recursively finds libraries in LIBRARY path (and transitively dependent
+  libraries) that have library at UPDATED_PATH as their dependency and updates
+  the version to the VERSION
+
+  Usage: bb update-versions LIBRARY VERSION UPDATED_PATH
+
+  Example usage:
+    bb update-versions is.d0x/cljs-web3-next 22.12.5 browser")
 (defn -main [& args]
   (let [[library version updated-path] *command-line-args*]
-    (log "Updating dependencies. Starting from:" library version updated-path)
-    (update-deps-at-path library version updated-path)))
+    (if (some clojure.string/blank? [library version updated-path])
+      (do
+        (log "ERROR: LIBRARY VERSION or UPDATED_PATH missing from arguments\n")
+        (log task-doc))
+      (update-deps-at-path library version updated-path))))
 
 ; To allow running as commandn line util but also required & used in other programs or REPL
 ; https://book.babashka.org/#main_file
