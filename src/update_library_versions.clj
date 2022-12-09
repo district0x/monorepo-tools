@@ -159,7 +159,7 @@
   (let [deps-details (map #(collect-deps-details % source-group-id) (load-all-libs-in-subfolders updatable-libraries-path))
         change-details (updated-deps new-version updated-library deps-details)]
     (if (not (empty? change-details)) (update-version-tracking new-version change-details (fs/parent updatable-libraries-path)))
-    (map write-deps-detail change-details)))
+    (doall (map write-deps-detail change-details))))
 
 (def task-doc
   "Recursively finds libraries in LIBRARY path (and transitively dependent

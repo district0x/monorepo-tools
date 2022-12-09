@@ -43,7 +43,7 @@
         version (calendar-version-today)
         updated-version-tracking (add-to-tracking selected-libraries version current-version-tracking)]
     (log (format "Adding libraries for the next version(%s) release:" version))
-    (doall (map #(log (str "  - " %) selected-libraries)))
+    (doall (map #(log (str "  - " %)) selected-libraries))
     (helpers/write-edn updated-version-tracking version-tracking-path)))
 
 (def task-doc
