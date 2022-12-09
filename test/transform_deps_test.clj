@@ -47,5 +47,5 @@
                               {:override-deps
                                {'is.d0x/cljs-web3-next {:local/root "../../shared/cljs-web3-next"}
                                 'is.d0x/district-server-db {:local/root "../district-server-db"}}}}}]
-      (is (= expected
+      (is (= (assoc-in expected [:aliases :shadow-cljs] td/*default-shadow-deps*)
              (td/transform-deps known-libraries "is.d0x" "22.12.5" "../d0x-libs/server/district-server-web3/deps.edn" deps-edn))))))

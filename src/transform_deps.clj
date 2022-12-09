@@ -50,6 +50,10 @@
       (throw (Exception. (format "Ambiguous known-lib: %s vs %s" known-lib found-paths))))
     (str (fs/relativize lib-path (first found-paths)))))
 
+(def ^:dynamic *default-shadow-deps*
+  {:extra-deps {'thheller/shadow-cljs {:mvn/version "2.19.8"}}
+   :main-opts ["-m" "shadow.cljs.devtools.cli"]})
+
 (defn transform-deps [known-lib-paths target-group target-version lib-deps-path deps-edn]
   (let [new-version {:mvn/version target-version}
         known-libraries (map library-from-deps-path known-lib-paths)
@@ -68,7 +72,8 @@
                          {} (:deps deps-edn))]
     (-> deps-edn
         (assoc-in ,,, [:deps] new-deps)
-        (assoc-in ,,, [:aliases :local-deps :override-deps] local-deps))))
+        (assoc-in ,,, [:aliases :local-deps :override-deps] local-deps)
+        (assoc-in ,,, [:aliases :shadow-cljs] *default-shadow-deps*))))
 
 (defn update-deps [updater-fn lib-deps-path]
   (let [current-deps-contents (helpers/read-edn lib-deps-path)

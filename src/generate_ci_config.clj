@@ -38,7 +38,7 @@
      (vector
        (format "      - run:")
        (format "          name: Compile Node tests for %s" library)
-       (format "          command: cd %s && npx shadow-cljs compile test-node" library)
+       (format "          command: cd %s && clj -A:shadow-cljs:local-deps compile test-node" library)
        (format "      - run:")
        (format "          name: ⭐Run Node tests for %s" library)
        (format "          command: cd %s && node out/node-tests.js" library)))
@@ -46,7 +46,7 @@
      (vector
        (format "      - run:")
        (format "          name: Compile Browser tests for %s" library)
-       (format "          command: cd %s && npx shadow-cljs compile test-ci" library)
+       (format "          command: cd %s && clj -A:shadow-cljs:local-deps compile test-ci" library)
        (format "      - run:")
        (format "          name: ⭐Run Browser (karma) tests for %s" library)
        (format "          command: CHROME_BIN=`which chromium-browser` cd %s && npx karma start karma.conf.js --single-run" library)))])
