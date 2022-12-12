@@ -21,8 +21,7 @@
     (b/write-pom {:class-dir class-dir
                   :lib artefact-id
                   :version version
-                  :basis (b/create-basis {:project (subdir (first lib-paths) "deps.edn")
-                                          :aliases [:local-deps]})
+                  :basis (b/create-basis {:project (subdir (first lib-paths) "deps.edn")})
                   :src-dirs src-dirs})
     (b/copy-dir {:src-dirs src-dirs
                  :target-dir class-dir})
