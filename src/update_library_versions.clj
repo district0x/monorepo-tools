@@ -145,8 +145,8 @@
         version-info {:created-at (current-timestamp)
                       :version version
                       :description "placeholder"
-                      :libs updated-libraries}
-        updated-version-tracking (conj previous-details version-info)]
+                      :libs (into [] updated-libraries)}
+        updated-version-tracking (into [] (concat [version-info] previous-details))]
     (helpers/write-edn updated-version-tracking version-tracking-path)))
 
 (defn update-deps-at-path

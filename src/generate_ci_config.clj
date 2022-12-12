@@ -38,7 +38,7 @@
      (vector
        (format "      - run:")
        (format "          name: Compile Node tests for %s" library)
-       (format "          command: cd %s && clojure -A:dev:shadow-cljs:local-deps compile test-node" library)
+       (format "          command: cd %s && clojure -A:dev:test:shadow-cljs:local-deps compile test-node" library)
        (format "      - run:")
        (format "          name: ⭐Run Node tests for %s" library)
        (format "          command: cd %s && node out/node-tests.js" library)))
@@ -46,7 +46,7 @@
      (vector
        (format "      - run:")
        (format "          name: Compile Browser tests for %s" library)
-       (format "          command: cd %s && clojure -A:dev:shadow-cljs:local-deps compile test-ci" library)
+       (format "          command: cd %s && clojure -A:dev:test:shadow-cljs:local-deps compile test-ci" library)
        (format "      - run:")
        (format "          name: ⭐Run Browser (karma) tests for %s" library)
        (format "          command: CHROME_BIN=`which chromium-browser` cd %s && npx karma start karma.conf.js --single-run" library)))])
@@ -153,7 +153,9 @@
         version-tracking-timestamp (last-commit-timestamp version-tracking-path repo-root)
         library-source-paths (collect-libraries (:groups (get-config)) repo-root)
         libraries-source-timestamps (map #(vector (last-commit-timestamp % repo-root) %) (map #(relativize-path repo-root %) library-source-paths))
-        libraries-from-tracking (:libs latest-version)
+        libraries-from-tracking (-> (:libs latest-version)
+                                    (helpers/grouped-libs->libs-deps-map repo-root)
+                                    (helpers/order-libs-for-release))
         newest-source-change-timestamp (if (empty? libraries-source-timestamps)
                                          [-1]
                                          (reduce max (map first libraries-source-timestamps)))
