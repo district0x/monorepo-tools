@@ -153,7 +153,9 @@
         version-tracking-timestamp (last-commit-timestamp version-tracking-path repo-root)
         library-source-paths (collect-libraries (:groups (get-config)) repo-root)
         libraries-source-timestamps (map #(vector (last-commit-timestamp % repo-root) %) (map #(relativize-path repo-root %) library-source-paths))
-        libraries-from-tracking (:libs latest-version)
+        libraries-from-tracking (-> (:libs latest-version)
+                                    (helpers/grouped-libs->libs-deps-map repo-root)
+                                    (helpers/order-libs-for-release))
         newest-source-change-timestamp (if (empty? libraries-source-timestamps)
                                          [-1]
                                          (reduce max (map first libraries-source-timestamps)))

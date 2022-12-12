@@ -2,7 +2,8 @@
   (:require [clojure.java.shell :refer [sh with-sh-dir]]
             [babashka.fs :as fs]
             [clojure.edn :as edn]
-            [clojure.pprint :as pp]))
+            [clojure.pprint :as pp]
+            [com.stuartsierra.dependency :as dep]))
 
 (defn log [& args]
   (apply println args))
@@ -57,3 +58,28 @@
       :else (do
               (log "WARNING: group-id couldn't be detected, using the default: " default-group-id)
               default-group-id))))
+
+(defn grouped-libs->libs-deps-map
+  ([grouped-libs]
+   (grouped-libs->libs-deps-map grouped-libs "."))
+  ([grouped-libs libs-root]
+   (reduce #(assoc %1 %2 (read-edn (str libs-root "/" %2 "/deps.edn"))) {} grouped-libs)))
+
+(defn order-libs-for-release
+  "Detects interdependencies between libraries, orders independent libs first so that
+  those that need dependencies, can have them released by the time it's their turn"
+  [library-deps]
+  (let [known-libs (reduce (fn [known grouped-name]
+                             (assoc known (name (symbol grouped-name)) grouped-name))
+                           {}
+                           (keys library-deps))
+        add-dependency (fn [graph lib dependency]
+                               (if (contains? known-libs (name dependency))
+                                 (dep/depend graph lib (get known-libs (name dependency)))
+                                 graph))
+        graph (reduce (fn [graph [lib deps]]
+                        (reduce (fn [graph [needed-lib _]] (add-dependency graph lib needed-lib))
+                                graph (:deps deps)))
+                      (dep/graph)
+                      library-deps)]
+        (dep/topo-sort graph)))
