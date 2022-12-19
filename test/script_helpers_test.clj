@@ -44,4 +44,12 @@
       (is (= "shared/cljs-web3-next" (first ordered)))
       (is< ordered "server/district-server-web3" "server/district-server-smart-contracts")
       (is< ordered "browser/district-ui-web3" "browser/district-ui-smart-contracts")
-      (is< ordered "browser/district-ui-smart-contracts" "browser/district-ui-bundle"))))
+      (is< ordered "browser/district-ui-smart-contracts" "browser/district-ui-bundle")))
+
+  (testing "libs without deps"
+    (let [deps {"shared/district-parsers" {:deps {}}}]
+      (is (= '("shared/district-parsers") (helpers/order-libs-for-release deps))))
+
+    (let [deps {"shared/district-parsers" {:deps {}}
+                "shared/cljs-web3-next" {:deps {}}}]
+      (is (= '("shared/cljs-web3-next" "shared/district-parsers") (helpers/order-libs-for-release deps))))))

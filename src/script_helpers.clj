@@ -76,10 +76,13 @@
         add-dependency (fn [graph lib dependency]
                                (if (contains? known-libs (name dependency))
                                  (dep/depend graph lib (get known-libs (name dependency)))
-                                 graph))
-        graph (reduce (fn [graph [lib deps]]
-                        (reduce (fn [graph [needed-lib _]] (add-dependency graph lib needed-lib))
-                                graph (:deps deps)))
-                      (dep/graph)
-                      library-deps)]
-        (dep/topo-sort graph)))
+                                 (dep/depend graph lib lib)))
+        independent-libs-graph (reduce (fn [graph lib] (dep/depend graph lib nil)) (dep/graph) (keys library-deps))
+        graph (reduce
+                (fn [graph [lib deps]]
+                  (reduce (fn [graph [needed-lib _]] (add-dependency graph lib needed-lib))
+                          graph
+                          (:deps deps)))
+                independent-libs-graph
+                library-deps)]
+    (remove nil? (dep/topo-sort graph))))
