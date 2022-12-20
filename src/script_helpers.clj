@@ -67,7 +67,9 @@
 
 (defn order-libs-for-release
   "Detects interdependencies between libraries, orders independent libs first so that
-  those that need dependencies, can have them released by the time it's their turn"
+  those that need dependencies, can have them released by the time it's their turn
+
+  In the output list first come the sorted dependencies, last come the libraries w/o deps (independent)"
   [library-deps]
   (let [known-libs (reduce (fn [known grouped-name]
                              (assoc known (name (symbol grouped-name)) grouped-name))
@@ -76,13 +78,16 @@
         add-dependency (fn [graph lib dependency]
                                (if (contains? known-libs (name dependency))
                                  (dep/depend graph lib (get known-libs (name dependency)))
-                                 (dep/depend graph lib lib)))
-        independent-libs-graph (reduce (fn [graph lib] (dep/depend graph lib nil)) (dep/graph) (keys library-deps))
+                                 graph))
+        empty-graph (dep/graph)
         graph (reduce
                 (fn [graph [lib deps]]
-                  (reduce (fn [graph [needed-lib _]] (add-dependency graph lib needed-lib))
+                  (reduce (fn [graph [needed-lib _]]
+                            (add-dependency graph lib needed-lib))
                           graph
                           (:deps deps)))
-                independent-libs-graph
-                library-deps)]
-    (remove nil? (dep/topo-sort graph))))
+                empty-graph
+                library-deps)
+        sorted (dep/topo-sort graph)
+        the-rest (clojure.set/difference (set (keys library-deps)) (set sorted))]
+    (into sorted the-rest)))

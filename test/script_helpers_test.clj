@@ -46,6 +46,10 @@
       (is< ordered "browser/district-ui-web3" "browser/district-ui-smart-contracts")
       (is< ordered "browser/district-ui-smart-contracts" "browser/district-ui-bundle")))
 
+  (testing "libs with only 3rd party deps"
+    (let [deps {"shared/cljs-web3-next" {:deps {'io.outside/unknown-lib {:mvn/version "21"}}}}]
+      (is (= '("shared/cljs-web3-next") (helpers/order-libs-for-release deps)))))
+
   (testing "libs without deps"
     (let [deps {"shared/district-parsers" {:deps {}}}]
       (is (= '("shared/district-parsers") (helpers/order-libs-for-release deps))))
