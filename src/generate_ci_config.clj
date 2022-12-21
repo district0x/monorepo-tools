@@ -25,8 +25,18 @@
 (defn shared-library? [library]
   (clojure.string/starts-with? library "shared/"))
 
+(defn circleci-extra-steps [library]
+  (let [extra-steps-path (str library "/circleci-extra-steps.yml")]
+    (when (fs/exists? extra-steps-path)
+      (slurp extra-steps-path))))
+
 (defn test-section [library]
-  [(format "      - run:")
+  [
+   (format "      - run:")
+   (format "          name: 🏁 --- %s --- 🏁" library)
+   (format "          command: echo Starting test steps for %s " library)
+   (circleci-extra-steps library)
+   (format "      - run:")
    (format "          name: Install node modules in %s" library)
    (format "          command: cd %s && yarn install" library)
    (when (uses-smart-contracts? library)
