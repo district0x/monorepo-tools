@@ -66,6 +66,8 @@
    (format "          name: Build JAR & publishing to Clojars %s @ %s" library version)
    (format "          command: bb release %s %s" version library)])
 
+(def test-seed-phrase "easy leave proof verb wait patient fringe laptop intact opera slab shine")
+
 (defn generate-test-run-config [libraries-to-test libraries-to-release version]
   (->> ["version: 2.1"
         "jobs:"
@@ -80,7 +82,7 @@
         "      #       aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
         "      # Secondary container image on common network."
         "      - image: trufflesuite/ganache-cli:latest"
-        "        command: [-d, -m district0x, -p 8549, -l 8000000, -b 1]"
+        (format "        command: [-d, -m \"%s\", -p 8549, -l 8000000, -b 1]" test-seed-phrase)
         "    steps:"
         "      - checkout"
         "      - run:"
