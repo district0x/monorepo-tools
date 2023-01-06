@@ -81,7 +81,7 @@
         "      #       aws_access_key_id: $AWS_ACCESS_KEY_ID"
         "      #       aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
         "      # Secondary container image on common network."
-        "      - image: trufflesuite/ganache-cli:latest"
+        "      - image: trufflesuite/ganache:v7.6.0"
         (format "        command: [-d, -m \"%s\", -p 8549, -l 8000000, -b 1]" test-seed-phrase)
         "    steps:"
         "      - checkout"
