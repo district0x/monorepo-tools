@@ -82,7 +82,7 @@
         "      #       aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
         "      # Secondary container image on common network."
         "      - image: trufflesuite/ganache:v7.6.0"
-        (format "        command: [-m \"%s\", -p 8549, -l 8000000, -b 1]" test-seed-phrase)
+        (format "        command: [-m \"%s\", -p 8549, -l 8000000, -b 1, --chain.allowUnlimitedContractSize=true]" test-seed-phrase)
         "    steps:"
         "      - checkout"
         "      - run:"
