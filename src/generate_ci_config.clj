@@ -66,6 +66,8 @@
    (format "          name: Build JAR & publishing to Clojars %s @ %s" library version)
    (format "          command: bb release %s %s" version library)])
 
+(def test-seed-phrase "easy leave proof verb wait patient fringe laptop intact opera slab shine")
+
 (defn generate-test-run-config [libraries-to-test libraries-to-release version]
   (->> ["version: 2.1"
         "jobs:"
@@ -73,13 +75,14 @@
         "    working_directory: ~/ci"
         "    docker:"
         "      # Primary container image where all steps run."
-        "      - image: 487920318758.dkr.ecr.us-west-2.amazonaws.com/cljs-web3-ci:latest"
-        "        aws_auth:"
-        "            aws_access_key_id: $AWS_ACCESS_KEY_ID"
-        "            aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
+        "      - image: madisn/cljs-node-babashka-browser-tests:latest"
+        "      # - image: 487920318758.dkr.ecr.us-west-2.amazonaws.com/cljs-web3-ci:latest"
+        "      #   aws_auth:"
+        "      #       aws_access_key_id: $AWS_ACCESS_KEY_ID"
+        "      #       aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
         "      # Secondary container image on common network."
-        "      - image: trufflesuite/ganache-cli:latest"
-        "        command: [-d, -m district0x, -p 8549, -l 8000000, -b 1]"
+        "      - image: trufflesuite/ganache:v7.6.0"
+        (format "        command: [-m \"%s\", -p 8549, -l 8000000, -b 1, --chain.allowUnlimitedContractSize=true]" test-seed-phrase)
         "    steps:"
         "      - checkout"
         "      - run:"
@@ -94,10 +97,11 @@
        "  deploy:"
        "    working_directory: ~/ci"
        "    docker:"
-       "      - image: 487920318758.dkr.ecr.us-west-2.amazonaws.com/cljs-web3-ci:latest"
-       "        aws_auth:"
-       "            aws_access_key_id: $AWS_ACCESS_KEY_ID"
-       "            aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
+       "      - image: madisn/cljs-node-babashka-browser-tests:latest"
+       "      # - image: 487920318758.dkr.ecr.us-west-2.amazonaws.com/cljs-web3-ci:latest"
+       "      #   aws_auth:"
+       "      #       aws_access_key_id: $AWS_ACCESS_KEY_ID"
+       "      #       aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
        "    steps:"
        "      - checkout"
        "      - run:"
