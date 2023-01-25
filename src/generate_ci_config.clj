@@ -25,17 +25,29 @@
 (defn shared-library? [library]
   (clojure.string/starts-with? library "shared/"))
 
-(defn circleci-extra-steps [library]
-  (let [extra-steps-path (str library "/circleci-extra-steps.yml")]
-    (when (fs/exists? extra-steps-path)
-      (slurp extra-steps-path))))
+; To keep track of background-services (e.g. IPFS) started by one of the libraries,
+; to avoid starting them again (and the errors related to it)
+(def background-service-registry (atom {}))
+
+(defn run-circle-background-service-steps [library registry]
+  (let [steps-files-root (str library)
+        steps-file-pattern "circle-ci-service-steps-*.yml"
+        service-step-files (map str (fs/glob steps-files-root steps-file-pattern))
+        service-step-map (reduce (fn [acc path]
+                                   (assoc acc (str (last (fs/components path))) path))
+                                 {} service-step-files) ; file-name => path
+        this-service-steps (into #{} (keys service-step-map))
+        done-service-steps (into #{} (keys @background-service-registry))
+        not-run-files (clojure.set/difference this-service-steps done-service-steps)]
+    (reset! background-service-registry (merge @background-service-registry service-step-map))
+    (map slurp (map #(get service-step-map %) not-run-files))))
 
 (defn test-section [library]
   [
    (format "      - run:")
    (format "          name: 🏁 --- %s --- 🏁" library)
    (format "          command: echo Starting test steps for %s " library)
-   (circleci-extra-steps library)
+   (run-circle-background-service-steps library background-service-registry)
    (format "      - run:")
    (format "          name: Install node modules in %s" library)
    (format "          command: cd %s && yarn install" library)

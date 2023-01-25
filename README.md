@@ -89,6 +89,14 @@ If you want to release manually the following is needed:
 2. Run `bb release 22.10.7 server/cljs-web3-next` to release `cljs-web3-next` with a version `22.10.7`
   - the version will be interpreted as string, so you can put whatever there, also `-SNAPSHOT` versions
 
+## Extra features
+
+Sometimes a library needs extra steps on CircleCI, like for example to run IPFS daemon for its tests.
+This can be achieved by placing a file called `circle-ci-service-steps-<...>.yml` in library's root folder.
+Doin so causes this file's contents to be inserted in the dynamic CircleCI configuration but ONLY ONCE per unique file name. For example if there's `circle-ci-service-steps-ipfs.yml` under `server/server-lib-a` and also in `browser/ui-lib-a` then the file will be inserted only once.
+This guarantees that the service doesn't get tried to be run more than once per CI build.
+> This saves both download time and avoids errors if same service can't run more than once e.g. due to trying to bind on the same ports
+
 ## Reasoning behind `monorepo-tools`
 
 ### Workings
