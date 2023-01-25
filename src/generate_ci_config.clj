@@ -25,17 +25,29 @@
 (defn shared-library? [library]
   (clojure.string/starts-with? library "shared/"))
 
-(defn circleci-extra-steps [library]
-  (let [extra-steps-path (str library "/circleci-extra-steps.yml")]
-    (when (fs/exists? extra-steps-path)
-      (slurp extra-steps-path))))
+; To keep track of background-services (e.g. IPFS) started by one of the libraries,
+; to avoid starting them again (and the errors related to it)
+(def background-service-registry (atom {}))
+
+(defn run-circle-background-service-steps [library registry]
+  (let [steps-files-root (str library)
+        steps-file-pattern "circle-ci-service-steps-*.yml"
+        service-step-files (map str (fs/glob steps-files-root steps-file-pattern))
+        service-step-map (reduce (fn [acc path]
+                                   (assoc acc (str (last (fs/components path))) path))
+                                 {} service-step-files) ; file-name => path
+        this-service-steps (into #{} (keys service-step-map))
+        done-service-steps (into #{} (keys @background-service-registry))
+        not-run-files (clojure.set/difference this-service-steps done-service-steps)]
+    (reset! background-service-registry (merge @background-service-registry service-step-map))
+    (map slurp (map #(get service-step-map %) not-run-files))))
 
 (defn test-section [library]
   [
    (format "      - run:")
    (format "          name: 🏁 --- %s --- 🏁" library)
    (format "          command: echo Starting test steps for %s " library)
-   (circleci-extra-steps library)
+   (run-circle-background-service-steps library background-service-registry)
    (format "      - run:")
    (format "          name: Install node modules in %s" library)
    (format "          command: cd %s && yarn install" library)
@@ -66,6 +78,8 @@
    (format "          name: Build JAR & publishing to Clojars %s @ %s" library version)
    (format "          command: bb release %s %s" version library)])
 
+(def test-seed-phrase "easy leave proof verb wait patient fringe laptop intact opera slab shine")
+
 (defn generate-test-run-config [libraries-to-test libraries-to-release version]
   (->> ["version: 2.1"
         "jobs:"
@@ -73,13 +87,14 @@
         "    working_directory: ~/ci"
         "    docker:"
         "      # Primary container image where all steps run."
-        "      - image: 487920318758.dkr.ecr.us-west-2.amazonaws.com/cljs-web3-ci:latest"
+        "      # - image: madisn/cljs-node-babashka-browser-tests:latest"
+        "      - image: 487920318758.dkr.ecr.us-west-2.amazonaws.com/cljs-web3-ci:node-16.15.1"
         "        aws_auth:"
         "            aws_access_key_id: $AWS_ACCESS_KEY_ID"
         "            aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
         "      # Secondary container image on common network."
-        "      - image: trufflesuite/ganache-cli:latest"
-        "        command: [-d, -m district0x, -p 8549, -l 8000000, -b 1]"
+        "      - image: trufflesuite/ganache:v7.6.0"
+        (format "        command: [-m \"%s\", -p 8549, -l 8000000, -b 1, --chain.allowUnlimitedContractSize=true]" test-seed-phrase)
         "    steps:"
         "      - checkout"
         "      - run:"
@@ -94,7 +109,8 @@
        "  deploy:"
        "    working_directory: ~/ci"
        "    docker:"
-       "      - image: 487920318758.dkr.ecr.us-west-2.amazonaws.com/cljs-web3-ci:latest"
+       "      # - image: madisn/cljs-node-babashka-browser-tests:latest"
+       "      - image: 487920318758.dkr.ecr.us-west-2.amazonaws.com/cljs-web3-ci:node-16.15.1"
        "        aws_auth:"
        "            aws_access_key_id: $AWS_ACCESS_KEY_ID"
        "            aws_secret_access_key: $AWS_SECRET_ACCESS_KEY"
@@ -111,8 +127,10 @@
        "  version: 2"
        "  test_and_deploy:"
        "    jobs:"
-       "      - test"
+       "      - test:"
+       "          context: district0x"
        "      - deploy:"
+       "          context: district0x"
        "          requires:"
        "            - test"
        "          filters:"
