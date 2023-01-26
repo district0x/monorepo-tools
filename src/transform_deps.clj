@@ -80,7 +80,33 @@
         updated-deps-contents (updater-fn lib-deps-path current-deps-contents)]
     (helpers/write-edn updated-deps-contents lib-deps-path)))
 
-(defn -main [& args]
+(defn -main
+  "This script helps to re-write deps.edn files in a monorepo.
+
+  It is useful when new library is migrated to the monorepo and other libraries depend onit.
+  It goes over all libraries in a group and finds their inter-dependencies, changing them to
+  depend on the defined GROUP_ARTEFACT_ID and TARGET_VERSION
+
+  The re-write has various effects:
+  1. Replacing group-id's (e.g. 'district' in district/some-lib)
+    - this is useful when migrating libraries to a new group id (is.d0x in our case)
+  2. Creating & filling `:local-deps` alias with relative paths
+    - it checks the libraries under `deps` section of `deps.edn` file
+    - if found (considered 'known' library), will point to its source folder via relative path
+  3. Adds `:shadow-cljs` to allow calling shadow-cljs commands via `clojure` (vs npx shadow-cljs)
+
+  Usage:
+    ./src/transform_deps.clj ROOT_PATH LIB_GROUP GROUP_ARTEFACT_ID TARGET_VERSION
+    Where
+      ROOT_PATH         - is the monorepo root (under which the libraries are under GROUP folder)
+      LIB_GROUP         - is subfolder under ROOT_PATH (e.g. server, browser, shared)
+      GROUP_ARTEFACT_ID - is the published Maven artefact group id (e.g. is.d0x)
+      TARGET_VERSION    - is the single version for all these transformed known dependencies
+  Example:
+    When run from inside a monorepo root, where this script lies in `./monorepo-tools/src`
+
+    ./monorepo-tools/src/transform_deps.clj . server is.d0x 23.1.26"
+  [& args]
   (let [[root-path lib-group group-artefact-id target-version] *command-line-args*
         deps-pattern (format "{%s}/*/deps.edn" lib-group)
         deps-files (map str (fs/glob root-path deps-pattern))
