@@ -22,7 +22,11 @@
                   :lib artefact-id
                   :version version
                   :basis (b/create-basis {:project (subdir (first lib-paths) "deps.edn")})
-                  :src-dirs src-dirs})
+                  :src-dirs src-dirs
+                  :pom-data [[:licenses
+                              [:license
+                               [:name "Eclipse Public License 1.0"]
+                               [:url "https://opensource.org/license/epl-1-0/"]]]]})
     (b/copy-dir {:src-dirs src-dirs
                  :target-dir class-dir})
     (b/jar {:class-dir class-dir
