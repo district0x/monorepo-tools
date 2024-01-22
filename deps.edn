@@ -1,5 +1,5 @@
 {:paths ["src" "test"]
- :deps {slipset/deps-deploy {:mvn/version "0.2.0"}
+ :deps {slipset/deps-deploy {:mvn/version "0.2.2"}
         babashka/fs {:mvn/version "0.1.11"}
-        io.github.clojure/tools.build {:git/tag "v0.8.3" :git/sha "0d20256"}}
+        io.github.clojure/tools.build {:git/tag "v0.9.6" :git/sha "8e78bcc"}}
  :aliases {:release {:exec-fn release/-main}}}
